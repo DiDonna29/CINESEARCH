@@ -1,3 +1,5 @@
+'use client';
+
 import { useLanguage } from '@/contexts/LanguageProvider';
 
 const Footer = () => {
