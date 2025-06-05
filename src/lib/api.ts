@@ -1,3 +1,4 @@
+
 import type { Movie, TVShow, ContentItem, ApiResponseError } from './types';
 import { API_BASE_URL, API_HOST, API_KEY } from './constants';
 
@@ -8,19 +9,50 @@ const RAPIDAPI_HEADERS = {
 
 async function fetchData<T>(endpoint: string): Promise<T | ApiResponseError> {
   try {
+    // Early check if API_KEY is missing from constants (likely due to missing .env configuration)
+    if (!API_KEY) {
+      const keyMissingMessage = 'API Key is missing. Please set NEXT_PUBLIC_RAPIDAPI_KEY in your .env file, ensure it is not empty, and restart the development server.';
+      console.error(keyMissingMessage + ` Attempted to call endpoint: ${endpoint}`);
+      return { message: keyMissingMessage };
+    }
+
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'GET',
       headers: RAPIDAPI_HEADERS,
     });
+
     if (!response.ok) {
-      console.error(`API Error (${response.status}): ${response.statusText} for endpoint ${endpoint}`);
-      try {
-        const errorData = await response.json();
-        return { message: errorData.message || `An error occurred while fetching data (status ${response.status}).` };
-      } catch (e) {
-        return { message: `An error occurred while fetching data (status ${response.status}). Unable to parse error response.` };
+      let userFriendlyMessage: string;
+      let detailedConsoleMessage: string;
+
+      if (response.status === 401) {
+        detailedConsoleMessage = `API Error (401): Unauthorized. Endpoint: ${endpoint}. This usually means the API key (NEXT_PUBLIC_RAPIDAPI_KEY) is invalid, missing permissions, or not provided correctly in the request headers.`;
+        userFriendlyMessage = `Authorization failed (Error 401). Please check if the API key is correctly configured. If you are the developer, ensure NEXT_PUBLIC_RAPIDAPI_KEY in your .env file is valid and the server was restarted.`;
+      } else {
+        detailedConsoleMessage = `API Error (${response.status}): ${response.statusText} for endpoint ${endpoint}`;
+        userFriendlyMessage = `An error occurred while fetching data (status ${response.status}). Please try again later.`;
       }
+      
+      console.error(detailedConsoleMessage); // Log detailed message for developers
+
+      try {
+        // Attempt to parse a more specific error message from the API response body
+        const errorData = await response.json();
+        if (errorData && errorData.message) {
+           if (response.status === 401) {
+              // Prepend guidance for 401 if API provides a specific message
+              userFriendlyMessage = `Authorization failed: ${errorData.message}. Please verify your API key configuration (NEXT_PUBLIC_RAPIDAPI_KEY in .env).`;
+           } else {
+              userFriendlyMessage = errorData.message; // Use API's error message
+           }
+        }
+      } catch (e) {
+        // Parsing error, stick with the previously constructed userFriendlyMessage
+        console.warn(`Could not parse JSON from error response for endpoint ${endpoint}:`, e);
+      }
+      return { message: userFriendlyMessage };
     }
+
     const data = await response.json();
     // The API returns an array of items. Assign a pseudo-ID using title.
     // Also, map the response to ensure all items have an 'id' and 'type'.
@@ -35,7 +67,8 @@ async function fetchData<T>(endpoint: string): Promise<T | ApiResponseError> {
 
   } catch (error) {
     console.error('Network or other error in fetchData:', error);
-    return { message: error instanceof Error ? error.message : 'An unknown network error occurred.' };
+    const networkErrorMessage = error instanceof Error ? error.message : 'An unknown network error occurred.';
+    return { message: `Network error: ${networkErrorMessage}. Please check your internet connection and the API endpoint configuration.` };
   }
 }
 
@@ -116,3 +149,4 @@ export async function searchContent(query: string, type: 'movie' | 'tvshow'): Pr
 export function isApiError(data: any): data is ApiResponseError {
   return typeof data === 'object' && data !== null && 'message' in data;
 }
+
