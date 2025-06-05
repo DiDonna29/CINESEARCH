@@ -8,7 +8,9 @@ import RecommendationSection from '@/components/ai/RecommendationSection';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useLanguage } from '@/contexts/LanguageProvider';
-import { CalendarDays, Clock, Users, Globe as GlobeIcon, Tv, Film, Info } from 'lucide-react';
+import { CalendarDays, Clock, Users, Globe as GlobeIcon, Tv, Film, Info, Tag } from 'lucide-react';
+import { Button } from '@/components/ui/button'; // Added Button import
+import { useState } from 'react'; 
 
 interface ContentDetailDisplayProps {
   item: ContentItem;
@@ -122,8 +124,6 @@ const ContentDetailDisplay: React.FC<ContentDetailDisplayProps> = ({ item }) => 
     </div>
   );
 };
-// Need to add useState to this client component
-ContentDetailDisplay.displayName = 'ContentDetailDisplay'; // For ESLint
-import { useState } from 'react'; // Add this line
-export default ContentDetailDisplay;
 
+ContentDetailDisplay.displayName = 'ContentDetailDisplay'; 
+export default ContentDetailDisplay;
