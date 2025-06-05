@@ -9,9 +9,9 @@ const RAPIDAPI_HEADERS = {
 
 async function fetchData<T>(endpoint: string): Promise<T | ApiResponseError> {
   try {
-    // Early check if API_KEY is missing from constants (likely due to missing .env configuration)
-    if (!API_KEY) {
-      const keyMissingMessage = 'API Key is missing. Please set NEXT_PUBLIC_RAPIDAPI_KEY in your .env file, ensure it is not empty, and restart the development server.';
+    // Early check if API_KEY is missing or is the placeholder
+    if (!API_KEY || API_KEY === 'PASTE_YOUR_KEY_HERE_OR_USE_A_PLACEHOLDER') {
+      const keyMissingMessage = 'API Key is missing or is a placeholder. Please set your actual NEXT_PUBLIC_RAPIDAPI_KEY in your .env file (and restart the server) or update it directly in src/lib/constants.ts if using the temporary hardcoded method.';
       console.error(keyMissingMessage + ` Attempted to call endpoint: ${endpoint}`);
       return { message: keyMissingMessage };
     }
@@ -27,7 +27,10 @@ async function fetchData<T>(endpoint: string): Promise<T | ApiResponseError> {
 
       if (response.status === 401) {
         detailedConsoleMessage = `API Error (401): Unauthorized. Endpoint: ${endpoint}. This usually means the API key (NEXT_PUBLIC_RAPIDAPI_KEY) is invalid, missing permissions, or not provided correctly in the request headers.`;
-        userFriendlyMessage = `Authorization failed (Error 401). Please check if the API key is correctly configured. If you are the developer, ensure NEXT_PUBLIC_RAPIDAPI_KEY in your .env file is valid and the server was restarted.`;
+        userFriendlyMessage = `Authorization failed (Error 401). Please check if the API key is correctly configured. If you are the developer, ensure your API Key (e.g. in .env or src/lib/constants.ts) is valid and the server was restarted if using .env.`;
+      } else if (response.status === 429) {
+        detailedConsoleMessage = `API Error (429): Too Many Requests. Endpoint: ${endpoint}. You have exceeded the API rate limit.`;
+        userFriendlyMessage = `Too many requests to the API (Error 429). You might be on a free plan with limited calls. Please wait a while before trying again, or check your API plan limits on RapidAPI.`;
       } else {
         detailedConsoleMessage = `API Error (${response.status}): ${response.statusText} for endpoint ${endpoint}`;
         userFriendlyMessage = `An error occurred while fetching data (status ${response.status}). Please try again later.`;
@@ -41,7 +44,9 @@ async function fetchData<T>(endpoint: string): Promise<T | ApiResponseError> {
         if (errorData && errorData.message) {
            if (response.status === 401) {
               // Prepend guidance for 401 if API provides a specific message
-              userFriendlyMessage = `Authorization failed: ${errorData.message}. Please verify your API key configuration (NEXT_PUBLIC_RAPIDAPI_KEY in .env).`;
+              userFriendlyMessage = `Authorization failed: ${errorData.message}. Please verify your API key configuration.`;
+           } else if (response.status === 429 && errorData.message) {
+              userFriendlyMessage = `Too many requests: ${errorData.message}. Please wait or check your API plan.`;
            } else {
               userFriendlyMessage = errorData.message; // Use API's error message
            }
@@ -117,11 +122,6 @@ export async function getTVShowByTitle(title: string): Promise<TVShow | null | A
 }
 
 export async function searchContent(query: string, type: 'movie' | 'tvshow'): Promise<ContentItem[] | ApiResponseError> {
-  // Assuming search endpoints like /search/movie/{query} or /search/tv/{query}
-  // For now, this is a placeholder. A real implementation depends on actual API.
-  // Example: const result = await fetchData<ContentItem[]>(`/search/${type}?query=${encodeURIComponent(query)}`);
-  // Fallback: fetch list and filter client-side (not good for actual search, but placeholder)
-  
   const endpoint = type === 'movie' ? `/search/movie/${encodeURIComponent(query)}` : `/search/tv/${encodeURIComponent(query)}`;
   const result = await fetchData<ContentItem[]>(endpoint);
 
@@ -149,4 +149,3 @@ export async function searchContent(query: string, type: 'movie' | 'tvshow'): Pr
 export function isApiError(data: any): data is ApiResponseError {
   return typeof data === 'object' && data !== null && 'message' in data;
 }
-
