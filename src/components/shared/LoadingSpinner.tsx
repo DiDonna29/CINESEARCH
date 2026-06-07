@@ -1,3 +1,5 @@
+'use client';
+
 import { Loader2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageProvider';
 
