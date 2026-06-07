@@ -1,4 +1,3 @@
-
 import type { ContentItem, ApiResponseError, PaginatedResponse, Movie, TVShow, Anime } from './types';
 import { OMDB_API_KEY, OMDB_BASE_URL } from './constants';
 
@@ -16,9 +15,9 @@ const mapOmdbToContentItem = (omdbItem: any, forcedType?: 'movie' | 'tvshow' | '
   const type = forcedType || typeMap[omdbItem.Type] || 'movie';
   
   return {
-    id: omdbItem.imdbID,
-    title: omdbItem.Title,
-    year: omdbItem.Year,
+    id: omdbItem.imdbID || 'unknown',
+    title: omdbItem.Title || 'Unknown Title',
+    year: omdbItem.Year || '',
     imdbRating: omdbItem.imdbRating && omdbItem.imdbRating !== 'N/A' ? parseFloat(omdbItem.imdbRating) : 0,
     duration: omdbItem.Runtime && omdbItem.Runtime !== 'N/A' ? omdbItem.Runtime : '',
     description: omdbItem.Plot && omdbItem.Plot !== 'N/A' ? omdbItem.Plot : '',
@@ -41,18 +40,26 @@ async function fetchOmdb(params: Record<string, string>) {
   });
 
   try {
-    const response = await fetch(url.toString());
+    const response = await fetch(url.toString(), { cache: 'no-store' });
+    
+    if (response.status === 401) {
+      return { error: 'API Key inválida o expirada. Por favor, revisa src/lib/constants.ts' };
+    }
+    
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`);
+      return { error: `Error de API: ${response.status}` };
     }
+    
     const data = await response.json();
+    
     if (data.Response === 'False') {
-      throw new Error(data.Error || 'Unknown API Error');
+      return { error: data.Error || 'Error desconocido de la API' };
     }
+    
     return data;
   } catch (error: any) {
     console.error('Fetch error:', error);
-    return { error: error.message };
+    return { error: error.message || 'Error de conexión con la API' };
   }
 }
 
@@ -60,18 +67,19 @@ async function fetchOmdb(params: Record<string, string>) {
  * Obtiene detalles completos para una lista de resultados de búsqueda
  */
 async function getEnrichedItems(searchItems: any[], forcedType?: 'movie' | 'tvshow' | 'anime'): Promise<ContentItem[]> {
+  if (!searchItems || !Array.isArray(searchItems)) return [];
+  
   const detailPromises = searchItems.map(item => 
     fetchOmdb({ i: item.imdbID, plot: 'short' })
   );
   
   const details = await Promise.all(detailPromises);
   return details
-    .filter(d => !d.error)
+    .filter(d => d && !d.error)
     .map(d => mapOmdbToContentItem(d, forcedType));
 }
 
 export async function getMovies(page: number = 1, limit: number = 10): Promise<PaginatedResponse<Movie> | ApiResponseError> {
-  // Para tener 100+, buscamos algo popular
   const data = await fetchOmdb({ s: '2024', type: 'movie', page: page.toString() });
   
   if (data.error) return { message: data.error };
@@ -82,7 +90,7 @@ export async function getMovies(page: number = 1, limit: number = 10): Promise<P
   return {
     data: items as Movie[],
     total: totalResults,
-    totalPages: Math.min(Math.ceil(totalResults / 10), 100), // Limitamos a 100 páginas si es necesario
+    totalPages: Math.min(Math.ceil(totalResults / 10), 100),
     currentPage: page
   };
 }
@@ -120,12 +128,13 @@ export async function getAnime(page: number = 1, limit: number = 10): Promise<Pa
 }
 
 export async function getContentByTitle(title: string): Promise<ContentItem | null | ApiResponseError> {
-  const data = await fetchOmdb({ i: title, plot: 'full' }); // Usamos el ID de IMDb que pasamos como 'title' en la URL
+  // OMDb permite buscar por ID (i) o por título (t). Aquí 'title' suele ser el ID de IMDb de la URL
+  const data = await fetchOmdb({ i: title, plot: 'full' });
   
   if (data.error) {
     // Si falla por ID, intentamos por título exacto
     const dataByTitle = await fetchOmdb({ t: title, plot: 'full' });
-    if (dataByTitle.error) return null;
+    if (dataByTitle.error) return { message: dataByTitle.error };
     return mapOmdbToContentItem(dataByTitle);
   }
   
