@@ -1,52 +1,151 @@
-import type { Movie, TVShow, Anime, ContentItem, ApiResponseError, PaginatedResponse } from './types';
-import { mockMovies, mockTVShows, mockAnime, allMockData } from './mock-data';
 
-const getPaginatedItems = <T>(items: T[], page: number, limit: number): PaginatedResponse<T> => {
-  const startIndex = (page - 1) * limit;
-  const endIndex = startIndex + limit;
-  const total = items.length;
-  const totalPages = Math.ceil(total / limit);
-  const data = items.slice(startIndex, endIndex);
+import type { ContentItem, ApiResponseError, PaginatedResponse, Movie, TVShow, Anime } from './types';
+import { OMDB_API_KEY, OMDB_BASE_URL } from './constants';
 
+/**
+ * Mapea la respuesta de OMDb al formato interno de ContentItem
+ */
+const mapOmdbToContentItem = (omdbItem: any, forcedType?: 'movie' | 'tvshow' | 'anime'): ContentItem => {
+  // OMDb types: 'movie', 'series', 'episode'
+  const typeMap: Record<string, 'movie' | 'tvshow' | 'anime'> = {
+    movie: 'movie',
+    series: 'tvshow',
+    episode: 'tvshow'
+  };
+
+  const type = forcedType || typeMap[omdbItem.Type] || 'movie';
+  
   return {
-    data,
-    total,
-    totalPages,
-    currentPage: page
+    id: omdbItem.imdbID,
+    title: omdbItem.Title,
+    year: omdbItem.Year,
+    imdbRating: omdbItem.imdbRating && omdbItem.imdbRating !== 'N/A' ? parseFloat(omdbItem.imdbRating) : 0,
+    duration: omdbItem.Runtime && omdbItem.Runtime !== 'N/A' ? omdbItem.Runtime : '',
+    description: omdbItem.Plot && omdbItem.Plot !== 'N/A' ? omdbItem.Plot : '',
+    genre: omdbItem.Genre && omdbItem.Genre !== 'N/A' ? omdbItem.Genre.split(', ') : [],
+    country: omdbItem.Country && omdbItem.Country !== 'N/A' ? omdbItem.Country.split(', ') : [],
+    stars: omdbItem.Actors && omdbItem.Actors !== 'N/A' ? omdbItem.Actors.split(', ') : [],
+    imageURL: omdbItem.Poster && omdbItem.Poster !== 'N/A' ? omdbItem.Poster : undefined,
+    type
   };
 };
 
+/**
+ * Realiza una petición a OMDb
+ */
+async function fetchOmdb(params: Record<string, string>) {
+  const url = new URL(OMDB_BASE_URL);
+  url.searchParams.set('apikey', OMDB_API_KEY);
+  Object.entries(params).forEach(([key, value]) => {
+    url.searchParams.set(key, value);
+  });
+
+  try {
+    const response = await fetch(url.toString());
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status}`);
+    }
+    const data = await response.json();
+    if (data.Response === 'False') {
+      throw new Error(data.Error || 'Unknown API Error');
+    }
+    return data;
+  } catch (error: any) {
+    console.error('Fetch error:', error);
+    return { error: error.message };
+  }
+}
+
+/**
+ * Obtiene detalles completos para una lista de resultados de búsqueda
+ */
+async function getEnrichedItems(searchItems: any[], forcedType?: 'movie' | 'tvshow' | 'anime'): Promise<ContentItem[]> {
+  const detailPromises = searchItems.map(item => 
+    fetchOmdb({ i: item.imdbID, plot: 'short' })
+  );
+  
+  const details = await Promise.all(detailPromises);
+  return details
+    .filter(d => !d.error)
+    .map(d => mapOmdbToContentItem(d, forcedType));
+}
+
 export async function getMovies(page: number = 1, limit: number = 10): Promise<PaginatedResponse<Movie> | ApiResponseError> {
-  return getPaginatedItems(mockMovies, page, limit);
+  // Para tener 100+, buscamos algo popular
+  const data = await fetchOmdb({ s: '2024', type: 'movie', page: page.toString() });
+  
+  if (data.error) return { message: data.error };
+
+  const totalResults = parseInt(data.totalResults || '0', 10);
+  const items = await getEnrichedItems(data.Search, 'movie');
+
+  return {
+    data: items as Movie[],
+    total: totalResults,
+    totalPages: Math.min(Math.ceil(totalResults / 10), 100), // Limitamos a 100 páginas si es necesario
+    currentPage: page
+  };
 }
 
 export async function getTVShows(page: number = 1, limit: number = 10): Promise<PaginatedResponse<TVShow> | ApiResponseError> {
-  return getPaginatedItems(mockTVShows, page, limit);
+  const data = await fetchOmdb({ s: 'series', type: 'series', page: page.toString() });
+  
+  if (data.error) return { message: data.error };
+
+  const totalResults = parseInt(data.totalResults || '0', 10);
+  const items = await getEnrichedItems(data.Search, 'tvshow');
+
+  return {
+    data: items as TVShow[],
+    total: totalResults,
+    totalPages: Math.min(Math.ceil(totalResults / 10), 100),
+    currentPage: page
+  };
 }
 
 export async function getAnime(page: number = 1, limit: number = 10): Promise<PaginatedResponse<Anime> | ApiResponseError> {
-  return getPaginatedItems(mockAnime, page, limit);
+  const data = await fetchOmdb({ s: 'anime', page: page.toString() });
+  
+  if (data.error) return { message: data.error };
+
+  const totalResults = parseInt(data.totalResults || '0', 10);
+  const items = await getEnrichedItems(data.Search, 'anime');
+
+  return {
+    data: items as Anime[],
+    total: totalResults,
+    totalPages: Math.min(Math.ceil(totalResults / 10), 100),
+    currentPage: page
+  };
 }
 
 export async function getContentByTitle(title: string): Promise<ContentItem | null | ApiResponseError> {
-  const decodedId = decodeURIComponent(title);
-  const item = allMockData.find(m => m.id === decodedId || m.title.toLowerCase() === decodedId.toLowerCase());
-  return item || null;
+  const data = await fetchOmdb({ i: title, plot: 'full' }); // Usamos el ID de IMDb que pasamos como 'title' en la URL
+  
+  if (data.error) {
+    // Si falla por ID, intentamos por título exacto
+    const dataByTitle = await fetchOmdb({ t: title, plot: 'full' });
+    if (dataByTitle.error) return null;
+    return mapOmdbToContentItem(dataByTitle);
+  }
+  
+  return mapOmdbToContentItem(data);
 }
 
-// Keep legacy named functions for compatibility
 export const getMovieByTitle = getContentByTitle;
 export const getTVShowByTitle = getContentByTitle;
 export const getAnimeByTitle = getContentByTitle;
 
 export async function searchContent(query: string, type: 'movie' | 'tvshow' | 'anime'): Promise<ContentItem[] | ApiResponseError> {
-  const decodedQuery = decodeURIComponent(query).toLowerCase();
-  const source = type === 'movie' ? mockMovies : type === 'tvshow' ? mockTVShows : mockAnime;
+  const omdbType = type === 'movie' ? 'movie' : type === 'tvshow' ? 'series' : '';
+  const searchParams: any = { s: query };
+  if (omdbType) searchParams.type = omdbType;
+
+  const data = await fetchOmdb(searchParams);
   
-  return source.filter(item => 
-    item.title.toLowerCase().includes(decodedQuery) || 
-    (item.description && item.description.toLowerCase().includes(decodedQuery))
-  );
+  if (data.error) return [];
+
+  return getEnrichedItems(data.Search, type);
 }
 
 export function isApiError(data: any): data is ApiResponseError {
