@@ -1,11 +1,7 @@
 import type { ContentItem, ApiResponseError, PaginatedResponse, Movie, TVShow, Anime } from './types';
 import { OMDB_API_KEY, OMDB_BASE_URL } from './constants';
 
-/**
- * Mapea la respuesta de OMDb al formato interno de ContentItem
- */
 const mapOmdbToContentItem = (omdbItem: any, forcedType?: 'movie' | 'tvshow' | 'anime'): ContentItem => {
-  // OMDb types: 'movie', 'series', 'episode'
   const typeMap: Record<string, 'movie' | 'tvshow' | 'anime'> = {
     movie: 'movie',
     series: 'tvshow',
@@ -29,9 +25,6 @@ const mapOmdbToContentItem = (omdbItem: any, forcedType?: 'movie' | 'tvshow' | '
   };
 };
 
-/**
- * Realiza una petición a OMDb
- */
 async function fetchOmdb(params: Record<string, string>) {
   const url = new URL(OMDB_BASE_URL);
   url.searchParams.set('apikey', OMDB_API_KEY);
@@ -40,49 +33,43 @@ async function fetchOmdb(params: Record<string, string>) {
   });
 
   try {
-    const response = await fetch(url.toString(), { cache: 'no-store' });
+    const response = await fetch(url.toString(), { 
+      next: { revalidate: 3600 } // Cache for 1 hour
+    });
     
     if (response.status === 401) {
-      return { error: 'API Key inválida o expirada. Por favor, revisa src/lib/constants.ts' };
+      return { error: 'Invalid API Key' };
     }
     
     if (!response.ok) {
-      return { error: `Error de API: ${response.status}` };
+      return { error: `API Error: ${response.status}` };
     }
     
     const data = await response.json();
-    
-    if (data.Response === 'False') {
-      return { error: data.Error || 'Error desconocido de la API' };
-    }
-    
     return data;
   } catch (error: any) {
-    console.error('Fetch error:', error);
-    return { error: error.message || 'Error de conexión con la API' };
+    return { error: error.message || 'Connection Error' };
   }
 }
 
-/**
- * Obtiene detalles completos para una lista de resultados de búsqueda
- */
 async function getEnrichedItems(searchItems: any[], forcedType?: 'movie' | 'tvshow' | 'anime'): Promise<ContentItem[]> {
   if (!searchItems || !Array.isArray(searchItems)) return [];
   
-  const detailPromises = searchItems.map(item => 
+  // We limit concurrent requests to avoid 429 errors from OMDb
+  const detailPromises = searchItems.slice(0, 10).map(item => 
     fetchOmdb({ i: item.imdbID, plot: 'short' })
   );
   
   const details = await Promise.all(detailPromises);
   return details
-    .filter(d => d && !d.error)
+    .filter(d => d && d.Response !== 'False' && !d.error)
     .map(d => mapOmdbToContentItem(d, forcedType));
 }
 
 export async function getMovies(page: number = 1, limit: number = 10): Promise<PaginatedResponse<Movie> | ApiResponseError> {
   const data = await fetchOmdb({ s: '2024', type: 'movie', page: page.toString() });
   
-  if (data.error) return { message: data.error };
+  if (data.error || data.Response === 'False') return { message: data.error || data.Error || 'No movies found' };
 
   const totalResults = parseInt(data.totalResults || '0', 10);
   const items = await getEnrichedItems(data.Search, 'movie');
@@ -98,7 +85,7 @@ export async function getMovies(page: number = 1, limit: number = 10): Promise<P
 export async function getTVShows(page: number = 1, limit: number = 10): Promise<PaginatedResponse<TVShow> | ApiResponseError> {
   const data = await fetchOmdb({ s: 'series', type: 'series', page: page.toString() });
   
-  if (data.error) return { message: data.error };
+  if (data.error || data.Response === 'False') return { message: data.error || data.Error || 'No TV shows found' };
 
   const totalResults = parseInt(data.totalResults || '0', 10);
   const items = await getEnrichedItems(data.Search, 'tvshow');
@@ -114,7 +101,7 @@ export async function getTVShows(page: number = 1, limit: number = 10): Promise<
 export async function getAnime(page: number = 1, limit: number = 10): Promise<PaginatedResponse<Anime> | ApiResponseError> {
   const data = await fetchOmdb({ s: 'anime', page: page.toString() });
   
-  if (data.error) return { message: data.error };
+  if (data.error || data.Response === 'False') return { message: data.error || data.Error || 'No anime found' };
 
   const totalResults = parseInt(data.totalResults || '0', 10);
   const items = await getEnrichedItems(data.Search, 'anime');
@@ -128,16 +115,12 @@ export async function getAnime(page: number = 1, limit: number = 10): Promise<Pa
 }
 
 export async function getContentByTitle(title: string): Promise<ContentItem | null | ApiResponseError> {
-  // OMDb permite buscar por ID (i) o por título (t). Aquí 'title' suele ser el ID de IMDb de la URL
   const data = await fetchOmdb({ i: title, plot: 'full' });
-  
-  if (data.error) {
-    // Si falla por ID, intentamos por título exacto
+  if (data.error || data.Response === 'False') {
     const dataByTitle = await fetchOmdb({ t: title, plot: 'full' });
-    if (dataByTitle.error) return { message: dataByTitle.error };
+    if (dataByTitle.error || dataByTitle.Response === 'False') return { message: dataByTitle.Error || 'Not found' };
     return mapOmdbToContentItem(dataByTitle);
   }
-  
   return mapOmdbToContentItem(data);
 }
 
@@ -151,8 +134,7 @@ export async function searchContent(query: string, type: 'movie' | 'tvshow' | 'a
   if (omdbType) searchParams.type = omdbType;
 
   const data = await fetchOmdb(searchParams);
-  
-  if (data.error) return [];
+  if (data.error || data.Response === 'False') return [];
 
   return getEnrichedItems(data.Search, type);
 }
