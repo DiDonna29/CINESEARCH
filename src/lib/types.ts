@@ -22,6 +22,13 @@ export interface TVShow extends ContentItem {
   // TVShow specific fields if any, e.g. seasons, episodes
 }
 
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  totalPages: number;
+  currentPage: number;
+}
+
 export interface ApiResponseError {
   message: string;
 }

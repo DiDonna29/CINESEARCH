@@ -51,6 +51,9 @@ const translations: Record<Language, Record<string, string>> = {
     spanish: 'Spanish',
     country: 'Country',
     in: 'in',
+    next: 'Next',
+    previous: 'Previous',
+    pageOf: 'Page {{current}} of {{total}}',
   },
   es: {
     movies: 'Películas',
@@ -88,6 +91,9 @@ const translations: Record<Language, Record<string, string>> = {
     spanish: 'Español',
     country: 'País',
     in: 'en',
+    next: 'Siguiente',
+    previous: 'Anterior',
+    pageOf: 'Página {{current}} de {{total}}',
   },
 };
 
