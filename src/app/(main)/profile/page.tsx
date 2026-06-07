@@ -12,6 +12,7 @@ export default function ProfilePage() {
 
   const likedMovies = likedItems.filter(item => item.type === 'movie');
   const likedTVShows = likedItems.filter(item => item.type === 'tvshow');
+  const likedAnime = likedItems.filter(item => item.type === 'anime');
 
   return (
     <div className="space-y-8">
@@ -24,35 +25,31 @@ export default function ProfilePage() {
         <p className="text-muted-foreground text-center py-10 text-xl">{t('noLikedContent')}</p>
       ) : (
         <Tabs defaultValue="movies" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="movies" disabled={likedMovies.length === 0}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="movies">
               {t('movies')} ({likedMovies.length})
             </TabsTrigger>
-            <TabsTrigger value="tvshows" disabled={likedTVShows.length === 0}>
+            <TabsTrigger value="tvshows">
               {t('tvShows')} ({likedTVShows.length})
+            </TabsTrigger>
+            <TabsTrigger value="anime">
+              {t('anime')} ({likedAnime.length})
             </TabsTrigger>
           </TabsList>
           <TabsContent value="movies">
-            {likedMovies.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-6">
-                {likedMovies.map((item) => (
-                  <ContentCard key={item.id} item={item} />
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-center py-6">{t('noLikedContent')} {t('movies').toLowerCase()}.</p>
-            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-6">
+              {likedMovies.map((item) => <ContentCard key={item.id} item={item} />)}
+            </div>
           </TabsContent>
           <TabsContent value="tvshows">
-            {likedTVShows.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-6">
-                {likedTVShows.map((item) => (
-                  <ContentCard key={item.id} item={item} />
-                ))}
-              </div>
-            ) : (
-               <p className="text-muted-foreground text-center py-6">{t('noLikedContent')} {t('tvShows').toLowerCase()}.</p>
-            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-6">
+              {likedTVShows.map((item) => <ContentCard key={item.id} item={item} />)}
+            </div>
+          </TabsContent>
+          <TabsContent value="anime">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-6">
+              {likedAnime.map((item) => <ContentCard key={item.id} item={item} />)}
+            </div>
           </TabsContent>
         </Tabs>
       )}

@@ -1,5 +1,5 @@
 export interface ContentItem {
-  id: string; // Using title as ID for now
+  id: string;
   title: string;
   imdbRating?: number;
   year?: string;
@@ -9,17 +9,19 @@ export interface ContentItem {
   country?: string[];
   stars?: string[];
   imageURL?: string;
-  type: 'movie' | 'tvshow';
+  type: 'movie' | 'tvshow' | 'anime';
 }
 
-// More specific types if needed, but ContentItem can be base
 export interface Movie extends ContentItem {
   type: 'movie';
 }
 
 export interface TVShow extends ContentItem {
   type: 'tvshow';
-  // TVShow specific fields if any, e.g. seasons, episodes
+}
+
+export interface Anime extends ContentItem {
+  type: 'anime';
 }
 
 export interface PaginatedResponse<T> {

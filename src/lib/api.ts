@@ -1,62 +1,52 @@
-import type { Movie, TVShow, ContentItem, ApiResponseError, PaginatedResponse } from './types';
-import { mockMovies } from './mock-data'; // Import mock data
+import type { Movie, TVShow, Anime, ContentItem, ApiResponseError, PaginatedResponse } from './types';
+import { mockMovies, mockTVShows, mockAnime, allMockData } from './mock-data';
 
-export async function getMovies(page: number = 1, limit: number = 10): Promise<PaginatedResponse<Movie> | ApiResponseError> {
-  console.log("Using mock data for getMovies. Page:", page, "Limit:", limit);
-  
+const getPaginatedItems = <T>(items: T[], page: number, limit: number): PaginatedResponse<T> => {
   const startIndex = (page - 1) * limit;
   const endIndex = startIndex + limit;
-  
-  const total = mockMovies.length;
+  const total = items.length;
   const totalPages = Math.ceil(total / limit);
-  const items = mockMovies.slice(startIndex, endIndex).map(movie => ({ ...movie, type: 'movie' as 'movie' }));
+  const data = items.slice(startIndex, endIndex);
 
   return {
-    data: items,
+    data,
     total,
     totalPages,
     currentPage: page
   };
+};
+
+export async function getMovies(page: number = 1, limit: number = 10): Promise<PaginatedResponse<Movie> | ApiResponseError> {
+  return getPaginatedItems(mockMovies, page, limit);
 }
 
-export async function getTVShows(page: number = 1): Promise<TVShow[] | ApiResponseError> {
-  console.log("Using mock data for getTVShows (returning empty). Page:", page);
-  return []; 
+export async function getTVShows(page: number = 1, limit: number = 10): Promise<PaginatedResponse<TVShow> | ApiResponseError> {
+  return getPaginatedItems(mockTVShows, page, limit);
 }
 
-export async function getMovieByTitle(title: string): Promise<Movie | null | ApiResponseError> {
-  const decodedTitle = decodeURIComponent(title);
-  console.log(`Using mock data for getMovieByTitle: ${decodedTitle}`);
-  const movie = mockMovies.find(m => m.title.toLowerCase() === decodedTitle.toLowerCase());
-  if (movie) {
-    return { ...movie, type: 'movie' as 'movie' };
-  }
-  return null;
+export async function getAnime(page: number = 1, limit: number = 10): Promise<PaginatedResponse<Anime> | ApiResponseError> {
+  return getPaginatedItems(mockAnime, page, limit);
 }
 
-export async function getTVShowByTitle(title: string): Promise<TVShow | null | ApiResponseError> {
-  const decodedTitle = decodeURIComponent(title);
-  console.log(`Using mock data for getTVShowByTitle (returning null): ${decodedTitle}`);
-  return null;
+export async function getContentByTitle(title: string): Promise<ContentItem | null | ApiResponseError> {
+  const decodedId = decodeURIComponent(title);
+  const item = allMockData.find(m => m.id === decodedId || m.title.toLowerCase() === decodedId.toLowerCase());
+  return item || null;
 }
 
-export async function searchContent(query: string, type: 'movie' | 'tvshow'): Promise<ContentItem[] | ApiResponseError> {
+// Keep legacy named functions for compatibility
+export const getMovieByTitle = getContentByTitle;
+export const getTVShowByTitle = getContentByTitle;
+export const getAnimeByTitle = getContentByTitle;
+
+export async function searchContent(query: string, type: 'movie' | 'tvshow' | 'anime'): Promise<ContentItem[] | ApiResponseError> {
   const decodedQuery = decodeURIComponent(query).toLowerCase();
-  console.log(`Using mock data for searchContent. Query: "${decodedQuery}", Type: ${type}`);
-
-  if (type === 'movie') {
-    const results = mockMovies.filter(movie => 
-      movie.title.toLowerCase().includes(decodedQuery) || 
-      (movie.description && movie.description.toLowerCase().includes(decodedQuery))
-    );
-    return results.map(movie => ({ ...movie, type: 'movie' as 'movie' }));
-  }
+  const source = type === 'movie' ? mockMovies : type === 'tvshow' ? mockTVShows : mockAnime;
   
-  if (type === 'tvshow') {
-    return [];
-  }
-  
-  return { message: `Search type "${type}" not supported in mock mode or no data available.` };
+  return source.filter(item => 
+    item.title.toLowerCase().includes(decodedQuery) || 
+    (item.description && item.description.toLowerCase().includes(decodedQuery))
+  );
 }
 
 export function isApiError(data: any): data is ApiResponseError {

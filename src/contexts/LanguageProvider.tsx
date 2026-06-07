@@ -9,7 +9,7 @@ interface LanguageContextType {
   language: Language;
   toggleLanguage: () => void;
   setLanguage: (lang: Language) => void;
-  t: (key: string) => string; // Simple translation function
+  t: (key: string) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -18,6 +18,7 @@ const translations: Record<Language, Record<string, string>> = {
   en: {
     movies: 'Movies',
     tvShows: 'TV Shows',
+    anime: 'Anime',
     search: 'Search',
     profile: 'Profile',
     recommendations: 'Recommendations',
@@ -36,7 +37,7 @@ const translations: Record<Language, Record<string, string>> = {
     showLess: 'Show Less',
     likedContent: 'Liked Content',
     noLikedContent: 'You have not liked any content yet.',
-    searchPlaceholder: 'Search for movies or TV shows...',
+    searchPlaceholder: 'Search for movies, TV shows or anime...',
     searchResultsFor: 'Search results for',
     noResultsFound: 'No results found.',
     loading: 'Loading...',
@@ -58,6 +59,7 @@ const translations: Record<Language, Record<string, string>> = {
   es: {
     movies: 'Películas',
     tvShows: 'Series de TV',
+    anime: 'Anime',
     search: 'Buscar',
     profile: 'Perfil',
     recommendations: 'Recomendaciones',
@@ -76,7 +78,7 @@ const translations: Record<Language, Record<string, string>> = {
     showLess: 'Mostrar Menos',
     likedContent: 'Contenido Guardado',
     noLikedContent: 'Aún no has guardado ningún contenido.',
-    searchPlaceholder: 'Buscar películas o series de TV...',
+    searchPlaceholder: 'Buscar películas, series o anime...',
     searchResultsFor: 'Resultados de búsqueda para',
     noResultsFound: 'No se encontraron resultados.',
     loading: 'Cargando...',
@@ -112,16 +114,12 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     return translations[language]?.[key] || translations['en']?.[key] || key;
   };
   
-  // Avoid rendering children until language is determined client-side
   const [hasMounted, setHasMounted] = useState(false);
   useEffect(() => {
     setHasMounted(true);
   }, []);
 
-  if (!hasMounted) {
-    return null; 
-  }
-
+  if (!hasMounted) return null;
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, toggleLanguage, t }}>
@@ -132,8 +130,6 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
 
 export const useLanguage = () => {
   const context = useContext(LanguageContext);
-  if (context === undefined) {
-    throw new Error('useLanguage must be used within a LanguageProvider');
-  }
+  if (context === undefined) throw new Error('useLanguage must be used within a LanguageProvider');
   return context;
 };
