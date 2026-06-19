@@ -5,13 +5,13 @@ import ErrorDisplay from '@/components/shared/ErrorDisplay';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface SearchPageProps {
-  searchParams: { q?: string };
+  searchParams: Promise<{ q?: string }>;
 }
 
 export const dynamic = 'force-dynamic';
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
-  const query = searchParams.q || '';
+  const { q: query } = await searchParams;
 
   if (!query) {
     return (

@@ -7,11 +7,11 @@ import ErrorDisplay from '@/components/shared/ErrorDisplay';
 export const dynamic = 'force-dynamic';
 
 interface TVShowDetailPageProps {
-  params: { title: string };
+  params: Promise<{ title: string }>;
 }
 
 export default async function TVShowDetailPage({ params }: TVShowDetailPageProps) {
-  const { title } = params;
+  const { title } = await params;
   const tvShowData = await getTVShowByTitle(title);
 
   if (isApiError(tvShowData)) {
@@ -43,7 +43,8 @@ export default async function TVShowDetailPage({ params }: TVShowDetailPageProps
 }
 
 export async function generateMetadata({ params }: TVShowDetailPageProps) {
-  const tvShow = await getTVShowByTitle(params.title);
+  const { title } = await params;
+  const tvShow = await getTVShowByTitle(title);
   if (isApiError(tvShow) || !tvShow) {
     return { title: 'TV Show Not Found' }
   }

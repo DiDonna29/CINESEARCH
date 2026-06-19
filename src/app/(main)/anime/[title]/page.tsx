@@ -7,11 +7,11 @@ import ErrorDisplay from '@/components/shared/ErrorDisplay';
 export const dynamic = 'force-dynamic';
 
 interface AnimeDetailPageProps {
-  params: { title: string };
+  params: Promise<{ title: string }>;
 }
 
 export default async function AnimeDetailPage({ params }: AnimeDetailPageProps) {
-  const { title } = params;
+  const { title } = await params;
   const animeData = await getAnimeByTitle(title);
 
   if (isApiError(animeData)) {
@@ -43,7 +43,8 @@ export default async function AnimeDetailPage({ params }: AnimeDetailPageProps) 
 }
 
 export async function generateMetadata({ params }: AnimeDetailPageProps) {
-  const anime = await getAnimeByTitle(params.title);
+  const { title } = await params;
+  const anime = await getAnimeByTitle(title);
   if (isApiError(anime) || !anime) {
     return { title: 'Anime Not Found' }
   }

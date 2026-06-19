@@ -3,16 +3,15 @@ import type { Movie } from '@/lib/types';
 import ContentDetailDisplay from '@/components/details/ContentDetailDisplay';
 import BackButton from '@/components/shared/BackButton';
 import ErrorDisplay from '@/components/shared/ErrorDisplay';
-import LoadingSpinner from '@/components/shared/LoadingSpinner';
 
 export const dynamic = 'force-dynamic';
 
 interface MovieDetailPageProps {
-  params: { title: string };
+  params: Promise<{ title: string }>;
 }
 
 export default async function MovieDetailPage({ params }: MovieDetailPageProps) {
-  const { title } = params;
+  const { title } = await params;
   const movieData = await getMovieByTitle(title);
 
   if (isApiError(movieData)) {
@@ -34,10 +33,6 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
       </div>
     );
   }
-  
-  // Example of how one might provide loading state if data fetching was client-side or took longer
-  // if (typeof window !== 'undefined' && !movie) return <LoadingSpinner />;
-
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -47,17 +42,9 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
   );
 }
 
-// Optional: Generate static paths if you have a known list of movies
-// export async function generateStaticParams() {
-//   const moviesData = await getMovies(); // Fetch first page for popular movies
-//   if (isApiError(moviesData) || !Array.isArray(moviesData)) return [];
-//   return moviesData.slice(0, 10).map((movie: Movie) => ({ // Limit for build time
-//     title: encodeURIComponent(movie.title),
-//   }));
-// }
-
 export async function generateMetadata({ params }: MovieDetailPageProps) {
-  const movie = await getMovieByTitle(params.title);
+  const { title } = await params;
+  const movie = await getMovieByTitle(title);
   if (isApiError(movie) || !movie) {
     return { title: 'Movie Not Found' }
   }
