@@ -31,16 +31,6 @@ export const LikesProvider = ({ children }: { children: ReactNode }) => {
     return likedItems.some(item => item.id === itemId);
   }, [likedItems]);
   
-  // Avoid rendering children until likes are determined client-side
-  const [hasMounted, setHasMounted] = React.useState(false);
-  React.useEffect(() => {
-    setHasMounted(true);
-  }, []);
-
-  if (!hasMounted) {
-    return null; 
-  }
-
   return (
     <LikesContext.Provider value={{ likedItems, addLike, removeLike, isLiked }}>
       {children}

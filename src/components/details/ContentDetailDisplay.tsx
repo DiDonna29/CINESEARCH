@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useLanguage } from '@/contexts/LanguageProvider';
 import { CalendarDays, Clock, Users, Globe as GlobeIcon, Tv, Film, Info, Tag } from 'lucide-react';
-import { Button } from '@/components/ui/button'; // Added Button import
+import { Button } from '@/components/ui/button'; 
 import { useState } from 'react'; 
 
 interface ContentDetailDisplayProps {
@@ -20,7 +20,7 @@ const ContentDetailDisplay: React.FC<ContentDetailDisplayProps> = ({ item }) => 
   const { t } = useLanguage();
   const [showFullDescription, setShowFullDescription] = useState(false);
   const descriptionWords = item.description?.split(' ').length || 0;
-  const shortDescriptionLength = 50; // Number of words for short description
+  const shortDescriptionLength = 50; 
 
   const toggleDescription = () => {
     setShowFullDescription(!showFullDescription);
@@ -36,12 +36,12 @@ const ContentDetailDisplay: React.FC<ContentDetailDisplayProps> = ({ item }) => 
     <div className="space-y-8 fade-in">
       <div className="grid md:grid-cols-3 gap-8 items-start">
         <div className="md:col-span-1">
-          <div className="relative aspect-[2/3] w-full rounded-lg overflow-hidden shadow-xl">
+          <div className="relative aspect-[2/3] w-full rounded-lg overflow-hidden shadow-xl bg-muted">
             <Image
               src={item.imageURL || `https://placehold.co/600x900.png?text=${encodeURIComponent(item.title)}`}
               alt={item.title}
-              layout="fill"
-              objectFit="cover"
+              fill
+              className="object-cover"
               priority
               data-ai-hint={`${item.type} poster large`}
             />
@@ -58,8 +58,8 @@ const ContentDetailDisplay: React.FC<ContentDetailDisplayProps> = ({ item }) => 
           
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-muted-foreground">
             <div className="flex items-center">
-              {item.type === 'movie' ? <Film className="mr-1.5 h-4 w-4" /> : <Tv className="mr-1.5 h-4 w-4" />}
-              <span>{item.type === 'movie' ? t('movies') : t('tvShows')}</span>
+              {item.type === 'movie' ? <Film className="mr-1.5 h-4 w-4" /> : item.type === 'tvshow' ? <Tv className="mr-1.5 h-4 w-4" /> : <Info className="mr-1.5 h-4 w-4" />}
+              <span>{item.type === 'movie' ? t('movies') : item.type === 'tvshow' ? t('tvShows') : t('anime')}</span>
             </div>
             {item.year && (
               <div className="flex items-center">
@@ -125,5 +125,4 @@ const ContentDetailDisplay: React.FC<ContentDetailDisplayProps> = ({ item }) => 
   );
 };
 
-ContentDetailDisplay.displayName = 'ContentDetailDisplay'; 
 export default ContentDetailDisplay;

@@ -15,7 +15,6 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setTheme] = useState(persistedTheme);
 
   useEffect(() => {
-    // Ensure theme is set on initial client render
     setTheme(persistedTheme);
   }, [persistedTheme]);
   
@@ -32,16 +31,6 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     setTheme((prevTheme) => (prevTheme === 'dark' ? 'light' : 'dark'));
   };
   
-  // Avoid rendering children until theme is determined client-side
-  const [hasMounted, setHasMounted] = useState(false);
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
-
-  if (!hasMounted) {
-    return null; 
-  }
-
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
       {children}

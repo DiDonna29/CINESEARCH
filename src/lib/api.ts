@@ -38,17 +38,17 @@ async function fetchOmdb(params: Record<string, string>) {
     });
     
     if (response.status === 401) {
-      return { error: 'Invalid API Key' };
+      return { message: 'Invalid or Unactivated API Key. Please check constants.ts' };
     }
     
     if (!response.ok) {
-      return { error: `API Error: ${response.status}` };
+      return { message: `API Error: ${response.status}` };
     }
     
     const data = await response.json();
     return data;
   } catch (error: any) {
-    return { error: error.message || 'Connection Error' };
+    return { message: error.message || 'Connection Error' };
   }
 }
 
@@ -62,14 +62,14 @@ async function getEnrichedItems(searchItems: any[], forcedType?: 'movie' | 'tvsh
   
   const details = await Promise.all(detailPromises);
   return details
-    .filter(d => d && d.Response !== 'False' && !d.error)
+    .filter(d => d && d.Response !== 'False' && !d.message)
     .map(d => mapOmdbToContentItem(d, forcedType));
 }
 
 export async function getMovies(page: number = 1, limit: number = 10): Promise<PaginatedResponse<Movie> | ApiResponseError> {
   const data = await fetchOmdb({ s: '2024', type: 'movie', page: page.toString() });
   
-  if (data.error || data.Response === 'False') return { message: data.error || data.Error || 'No movies found' };
+  if (data.message || data.Response === 'False') return { message: data.message || data.Error || 'No movies found' };
 
   const totalResults = parseInt(data.totalResults || '0', 10);
   const items = await getEnrichedItems(data.Search, 'movie');
@@ -85,7 +85,7 @@ export async function getMovies(page: number = 1, limit: number = 10): Promise<P
 export async function getTVShows(page: number = 1, limit: number = 10): Promise<PaginatedResponse<TVShow> | ApiResponseError> {
   const data = await fetchOmdb({ s: 'series', type: 'series', page: page.toString() });
   
-  if (data.error || data.Response === 'False') return { message: data.error || data.Error || 'No TV shows found' };
+  if (data.message || data.Response === 'False') return { message: data.message || data.Error || 'No TV shows found' };
 
   const totalResults = parseInt(data.totalResults || '0', 10);
   const items = await getEnrichedItems(data.Search, 'tvshow');
@@ -101,7 +101,7 @@ export async function getTVShows(page: number = 1, limit: number = 10): Promise<
 export async function getAnime(page: number = 1, limit: number = 10): Promise<PaginatedResponse<Anime> | ApiResponseError> {
   const data = await fetchOmdb({ s: 'anime', page: page.toString() });
   
-  if (data.error || data.Response === 'False') return { message: data.error || data.Error || 'No anime found' };
+  if (data.message || data.Response === 'False') return { message: data.message || data.Error || 'No anime found' };
 
   const totalResults = parseInt(data.totalResults || '0', 10);
   const items = await getEnrichedItems(data.Search, 'anime');
@@ -116,9 +116,9 @@ export async function getAnime(page: number = 1, limit: number = 10): Promise<Pa
 
 export async function getContentByTitle(title: string): Promise<ContentItem | null | ApiResponseError> {
   const data = await fetchOmdb({ i: title, plot: 'full' });
-  if (data.error || data.Response === 'False') {
+  if (data.message || data.Response === 'False') {
     const dataByTitle = await fetchOmdb({ t: title, plot: 'full' });
-    if (dataByTitle.error || dataByTitle.Response === 'False') return { message: dataByTitle.Error || 'Not found' };
+    if (dataByTitle.message || dataByTitle.Response === 'False') return { message: dataByTitle.message || dataByTitle.Error || 'Not found' };
     return mapOmdbToContentItem(dataByTitle);
   }
   return mapOmdbToContentItem(data);
@@ -134,7 +134,7 @@ export async function searchContent(query: string, type: 'movie' | 'tvshow' | 'a
   if (omdbType) searchParams.type = omdbType;
 
   const data = await fetchOmdb(searchParams);
-  if (data.error || data.Response === 'False') return [];
+  if (data.message || data.Response === 'False') return [];
 
   return getEnrichedItems(data.Search, type);
 }

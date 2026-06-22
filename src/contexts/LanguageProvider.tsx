@@ -114,13 +114,6 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     return translations[language]?.[key] || translations['en']?.[key] || key;
   };
   
-  const [hasMounted, setHasMounted] = useState(false);
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
-
-  if (!hasMounted) return null;
-
   return (
     <LanguageContext.Provider value={{ language, setLanguage, toggleLanguage, t }}>
       {children}
