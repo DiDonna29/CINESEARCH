@@ -4,7 +4,6 @@ import Image from 'next/image';
 import type { ContentItem } from '@/lib/types';
 import StarRating from '@/components/shared/StarRating';
 import LikeButton from '@/components/shared/LikeButton';
-import RecommendationSection from '@/components/ai/RecommendationSection';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useLanguage } from '@/contexts/LanguageProvider';
@@ -119,8 +118,6 @@ const ContentDetailDisplay: React.FC<ContentDetailDisplayProps> = ({ item }) => 
           )}
         </div>
       </div>
-
-      {item.description && <RecommendationSection description={item.description} currentItemId={item.id} />}
     </div>
   );
 };
