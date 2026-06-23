@@ -24,69 +24,60 @@ const Navbar = () => {
   };
 
   const navLinks = [
-    { href: '/', label: t('movies'), icon: <Film className="h-4 w-4 mr-1" /> },
-    { href: '/tvshows', label: t('tvShows'), icon: <Tv className="h-4 w-4 mr-1" /> },
-    { href: '/anime', label: t('anime'), icon: <Zap className="h-4 w-4 mr-1" /> },
+    { href: '/', label: t('movies'), icon: <Film className="h-4 w-4" /> },
+    { href: '/tvshows', label: t('tvShows'), icon: <Tv className="h-4 w-4" /> },
+    { href: '/anime', label: t('anime'), icon: <Zap className="h-4 w-4" /> },
   ];
 
   return (
-    <nav className="sticky top-0 z-50 bg-primary/95 backdrop-blur-md shadow-lg">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center space-x-2 text-white hover:text-accent transition-colors">
-              <Clapperboard className="h-8 w-8" />
-              <span className="text-2xl font-bold font-headline hidden sm:inline">CineSearch</span>
-            </Link>
-          </div>
+    <header className="sticky top-0 z-50 glass-morphism">
+      <div className="container mx-auto px-4">
+        <div className="flex h-20 items-center justify-between gap-4">
+          <Link href="/" className="flex items-center gap-2 shrink-0 group">
+            <div className="bg-accent p-2 rounded-xl group-hover:rotate-12 transition-transform duration-300">
+              <Clapperboard className="h-6 w-6 text-white" />
+            </div>
+            <span className="text-xl font-black tracking-tighter hidden sm:inline-block">CINESEARCH</span>
+          </Link>
 
-          <div className="hidden md:flex items-center space-x-6">
+          <nav className="hidden lg:flex items-center gap-8">
             {navLinks.map((link) => (
-              <Link key={link.href} href={link.href} className="flex items-center text-sm font-medium text-primary-foreground/90 hover:text-accent transition-colors">
-                {link.icon}
+              <Link 
+                key={link.href} 
+                href={link.href} 
+                className="flex items-center gap-2 text-sm font-semibold hover:text-accent transition-colors relative group"
+              >
                 {link.label}
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-accent transition-all group-hover:w-full" />
               </Link>
             ))}
-          </div>
+          </nav>
           
-          <div className="flex flex-1 items-center justify-center px-4 lg:ml-6 lg:justify-end">
-            <form onSubmit={handleSearchSubmit} className="w-full max-w-lg lg:max-w-xs">
-              <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <SearchIcon className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
-                </div>
-                <Input
-                  className="block w-full rounded-md border-0 bg-secondary py-1.5 pl-10 pr-3 text-secondary-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent sm:text-sm"
-                  placeholder={t('searchPlaceholder')}
-                  type="search"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
+          <div className="flex-1 flex items-center justify-end gap-4">
+            <form onSubmit={handleSearchSubmit} className="relative w-full max-w-[280px] group">
+              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent transition-colors" />
+              <Input
+                className="w-full bg-secondary/50 border-none pl-10 h-10 rounded-full focus-visible:ring-2 focus-visible:ring-accent/50 transition-all"
+                placeholder={t('searchPlaceholder')}
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </form>
-          </div>
 
-          <div className="flex items-center space-x-2">
-            <ThemeToggle />
-            <LanguageSwitcher />
-            <Link href="/profile">
-              <Button variant="ghost" size="icon" aria-label={t('profile')}>
-                <UserCircle className="h-6 w-6 text-white" />
-              </Button>
-            </Link>
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+              <ThemeToggle />
+              <LanguageSwitcher />
+              <Link href="/profile">
+                <Button variant="ghost" size="icon" className="rounded-full hover:bg-accent/10 hover:text-accent">
+                  <UserCircle className="h-6 w-6" />
+                </Button>
+              </Link>
+            </div>
           </div>
-        </div>
-        
-        {/* Mobile Navigation */}
-        <div className="md:hidden flex items-center justify-center space-x-6 py-2 border-t border-primary-foreground/10">
-          {navLinks.map((link) => (
-            <Link key={link.href} href={link.href} className="text-xs font-medium text-primary-foreground/90 hover:text-accent transition-colors">
-              {link.label}
-            </Link>
-          ))}
         </div>
       </div>
-    </nav>
+    </header>
   );
 };
 

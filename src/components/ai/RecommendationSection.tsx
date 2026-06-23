@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { recommendContent, type RecommendContentInput, type RecommendContentOutput } from '@/ai/flows/recommend-content';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
-import { Wand2 } from 'lucide-react';
+import { Wand2, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageProvider';
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -37,9 +37,9 @@ const RecommendationSection: React.FC<RecommendationSectionProps> = ({ descripti
   };
 
   return (
-    <Card className="mt-8 bg-card/50 shadow-lg">
+    <Card className="mt-8 bg-card/50 shadow-lg border-none">
       <CardHeader>
-        <CardTitle className="flex items-center text-2xl font-semibold text-foreground">
+        <CardTitle className="flex items-center text-2xl font-bold font-headline text-foreground">
           <Wand2 className="mr-2 h-6 w-6 text-accent" />
           {t('recommendations')}
         </CardTitle>
@@ -56,11 +56,8 @@ const RecommendationSection: React.FC<RecommendationSectionProps> = ({ descripti
         {!isLoading && !error && recommendations.length > 0 && (
           <ul className="space-y-2">
             {recommendations.map((rec, index) => (
-              <li key={index} className="p-3 bg-secondary/30 rounded-md hover:bg-secondary/50 transition-colors">
-                {/* Assuming recommendations are titles, try to link them.
-                    This requires knowing if they are movies or TV shows.
-                    For simplicity, linking to a generic search for the title. */}
-                <Link href={`/search?q=${encodeURIComponent(rec)}`} className="text-foreground hover:text-accent font-medium">
+              <li key={index} className="p-3 bg-secondary/30 rounded-md hover:bg-secondary/50 transition-premium">
+                <Link href={`/search?q=${encodeURIComponent(rec)}`} className="text-foreground hover:text-accent font-semibold">
                   {rec}
                 </Link>
               </li>
@@ -71,7 +68,7 @@ const RecommendationSection: React.FC<RecommendationSectionProps> = ({ descripti
           <p className="text-muted-foreground">{t('noRecommendations')}</p>
         )}
         {!isLoading && (
-           <Button onClick={fetchRecommendations} className="mt-4 bg-accent hover:bg-accent/90 text-accent-foreground">
+           <Button onClick={fetchRecommendations} className="mt-4 bg-accent hover:bg-accent/90 text-accent-foreground font-bold rounded-full px-6 transition-premium">
             <Wand2 className="mr-2 h-4 w-4" />
             {t('getRecommendations')}
           </Button>
@@ -81,6 +78,4 @@ const RecommendationSection: React.FC<RecommendationSectionProps> = ({ descripti
   );
 };
 
-// Add AlertTriangle to imports
-import { AlertTriangle } from 'lucide-react';
 export default RecommendationSection;
